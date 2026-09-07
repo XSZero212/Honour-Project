@@ -8,7 +8,9 @@ possible fragment orderings for a pair and looking at the resulting
 distribution of distances (instead of trusting a single distance computed
 on an arbitrary assembler-chosen order).
 
-## Core pipeline
+## Core pipeline 
+
+- ***`run_pipeline.py`*** - entry point for starting the pipeline from a folder of FASTA files. For people not interested in replicating the experiments, this is the main way of interacting with the distance calculator. It can take as input a folder of fastas. Optionally, the number of parallel calls, the amount of sampling to be done, and what implementation to be used can be set with flags when calling the script
 
 - **`generateShortRead.py`** — the core unit of work. Given two
   already-fragmented plasmid FASTA files, it reconstructs both plasmids
@@ -123,12 +125,3 @@ The `pling` CLI also needs to be installed and on `PATH`, since
 - `mash` — used to produce the mash-distance comparison files consumed by
   some of the plotting scripts.
 - Python: `matplotlib`, `numpy`, `pandas`, `scipy`.
-
-## Known rough edges
-
-Documented in more detail in the relevant docstrings, flagged here so
-they're not mistaken for intended behavior when reading the code:
-
-- `annotate.py`'s plotting functions depend on module-level `distances`/
-  `comparisons`/`colors` variables that are only ever set up in commented-out
-  code — none of them can currently run.
