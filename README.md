@@ -59,8 +59,6 @@ on an arbitrary assembler-chosen order).
   reference sequences; reports match/over/under-estimate rates and plots
   scatter + per-pair violins for the mismatches.
 - **`variance_vs_*.py`** — a collection of plotting scripts
-- **`annotate.py`** — early exploratory code; kept for reference but not
-  currently runnable as-is (see its module docstring for why).
 
 ## Data sources
 
