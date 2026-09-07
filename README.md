@@ -54,15 +54,11 @@ on an arbitrary assembler-chosen order).
 
 - **`plotting.py`** — paginated violin plots of a distance distribution
   file (variance per pair).
-- **`plot_vs_ground_trhuth.py`** — compares binned real-short-read distance
+- **`plot_vs_ground_truth.py`** — compares binned real-short-read distance
   distributions against ground-truth distances computed from full-length
   reference sequences; reports match/over/under-estimate rates and plots
   scatter + per-pair violins for the mismatches.
-- **`variance_vs.py`** — a stack of six variance-vs-property analyses
-  (contig count, plasmid length, length difference, mash distance, error
-  vs. those same properties, plus a standalone pling-vs-mash scatter). Only
-  one variant is active at a time (see the file's module docstring) — the
-  rest are commented out and swapped in by hand as needed.
+- **`variance_vs_*.py`** — a collection of plotting scripts
 - **`annotate.py`** — early exploratory code; kept for reference but not
   currently runnable as-is (see its module docstring for why).
 
