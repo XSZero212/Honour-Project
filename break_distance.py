@@ -51,7 +51,7 @@ def writeForClustering(plasmid,used):
     ID, and blocks is the list of (id, start, end) intervals — the cluster
     ID is what becomes the shared synteny-block label between plasmidA and
     plasmidB in cluster_alignments()."""
-    #writes synteny blocks to a file so we can run CD-HIT on them
+
     f = open("cluster_plasmid.fna","w+")
     g = open(f"./{plasmid}","r")
     g.readline()
@@ -262,19 +262,11 @@ def run(plasmidA,plasmidB):
     plasmid.coords (produced by my_implementation()) is the current
     nucmer/show-coords alignment between plasmidA and plasmidB."""
     genomes, indel_distance = cluster_alignments(plasmidA,plasmidB,"plasmid.coords")
-    # print(genomes_p)
-    # print()
-    # print(genomes_q)
-    # print()
     penal=1
     dist = penal*(indel_distance+genomes[2])+calculate2BreakDistance(genomes[0], genomes[1])
     return dist
     
 def readGenomeFromFile(file):
-        """Parses the "(±1 ±2 ...)(±3 ...)..." chromosome-string format
-        (as written by syntethic.write_test()) into the list-of-signed-int
-        genome representation used throughout this module. Used only by
-        test()."""
         f = open(f'{file}', 'r')
         data = []
         for line in f:
@@ -288,16 +280,10 @@ def readGenomeFromFile(file):
                 if d[0][0]=="(":
                     d[0]=d[0][1:]
                 genome.append([int(i[1:]) if i[0]=="+" else -1*int(i[1:]) for i in d])
-                # genome.append([int(d[0][1:] if '('==d[0][0] else d[0])] + [int(e) for e in d[1:-1]] +\
-                # [int(d[-1][:-1] if ')'==d[-1][-1] else d[-1])])
             return genome
 
 
 def chromosomeToCycle(chromosome):
-    """Standard genome-rearrangement construction: expands each signed
-    block in `chromosome` into its two graph nodes (head/tail), oriented
-    according to the block's sign, per Bafna-Pevzner / Compeau-Pevzner
-    2-break-distance theory."""
     l = len(chromosome)
     nodes = [0]*(2*l)
     for j in range(l):
@@ -311,9 +297,6 @@ def chromosomeToCycle(chromosome):
     return nodes
         
 def cycleToChromosome(nodes):
-    """Inverse of chromosomeToCycle(): converts a node-cycle back into a
-    signed-block chromosome. Not called elsewhere in this module — kept
-    for completeness/round-tripping."""
     l = len(nodes) // 2
     chromosome = [0]*l
     for j in range(l):
@@ -325,11 +308,6 @@ def cycleToChromosome(nodes):
     
 
 def coloredEdges(genome):
-    """Builds the set of "colored edges" (breakpoint-graph edges) for one
-    genome — one color per genome, so calculate2BreakDistance() unions
-    plasmidA's edges with plasmidB's edges to build the joint breakpoint
-    graph whose cycle count gives the 2-break distance."""
-    # transforms the geome that you give in a set of edges
     edges = set()
     for chromosome in genome:
         nodes = chromosomeToCycle(chromosome)
@@ -339,15 +317,6 @@ def coloredEdges(genome):
     return edges
         
 def calculate2BreakDistance(P, Q):
-    """Classic 2-break distance between two genomes P and Q (each a list of
-    chromosomes, each chromosome a list of signed synteny-block IDs).
-    Builds the joint breakpoint graph (coloredEdges(P) ∪ coloredEdges(Q)),
-    finds its connected components via union-find, and returns
-    (total_blocks - number_of_cycles) — the minimum number of 2-break
-    (double-cut-and-join) operations needed to transform P into Q.
-    (dist_formula_from_the_file / dist_updated are alternate odd-cycle-based
-    formulas kept for reference/comparison; the function returns
-    dist_2break_original.)"""
     blocks = sum([len(a) for a in P])
     edges = coloredEdges(P).union(coloredEdges(Q))
     parent = dict()
@@ -451,81 +420,3 @@ def test():
     plt.ylabel("The generated distance")
     plt.title("2-break distance")
     plt.show()
-
-#   nr_of_changes = []
-#     mean = 0
-#     for f in files:
-#         changes = int(f.split("fna")[1].split("_")[1])
-#         nr_of_changes.append(changes)
-#         mean+=changes
-#     print(mean/len(nr_of_changes))
-#     # plt.plot(nr_of_changes)
-#     # plt.show()
-
-def graph_construction(genomeP,genomeQ):
-    """Alternative single-chromosome 2-break-distance implementation: builds
-    the breakpoint graph directly as black edges (genomeP's adjacencies)
-    and grey edges (genomeQ's adjacencies), union-finds cycles while
-    tracking black-edge parity per component, and returns
-    (num_blocks - odd_cycles) / 2. Not called elsewhere in this module —
-    kept as an alternate/earlier formula next to calculate2BreakDistance()."""
-    nodes = [0]*(2*len(genomeP))
-    edges = []
-
-    #generating the black edges
-    for i in range(len(genomeP[0])):
-        idx = (i+1)%len(genomeP[0])
-        head = 2*i+1 if genomeP[0][i]>=0 else 2*i
-        tail = 2*idx if genomeP[0][i]>=0 else 2*idx+1
-        edges.append(((head,tail),0))
-    #generating the grey edges
-    for i in range(len(genomeQ[0])):
-        idx = (i+1)%len(genomeQ[0])
-        head = 2*i+1 if genomeQ[0][i]>=0 else 2*i
-        tail = 2*idx if genomeQ[0][i]>=0 else 2*idx+1
-        edges.append(((head,tail),1))
-    
-    cycles = dict()
-    nrOfCycles = 0
-
-    parent = dict()
-    rank = dict()
-    black = dict()
-    for e in nodes:
-        parent[e] = e
-        rank[e] = 0
-        black[e] = 0
-
-    def findParent(i):
-        if i != parent[i]:
-            parent[i] = findParent(parent[i])
-        return parent[i]
-        
- 
-    #the actual calculation
-    for i in edges:
-        parent_head = findParent(i[0][0])
-        parent_tail = findParent(i[0][1])
-        if parent_tail!=parent_head:
-            black[parent_head]+=black[parent_tail]
-            parent[parent_tail]=parent_head
-            if i[1]==0:
-                black[parent_head]+=1
-
-    nodesSets = set()
-
-    for e in edges:
-        id = findParent(e[0][0])
-        nodesSets.add(id)
-    
-    oddcycles = 0
-    for node in nodesSets:
-        if black[node]%2==1:
-            oddcycles+=1
-    
-    return math.ceil(len(genomeP[0])-oddcycles)/2
-        
-#test()
-            
-
-

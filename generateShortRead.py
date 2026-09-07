@@ -1,24 +1,22 @@
 """
-generateShortRead.py — core distance-sampling driver.
+generateShortRead.py — core distance-sampling script.
 
-Given two already-fragmented plasmid assemblies (each fragment is a separate
-FASTA record, standing in for contigs assembled from short reads), this
-script reconstructs both plasmids under different orderings of their
-fragments and measures the rearrangement distance between them for each
-ordering. Sampling over many fragment orderings gives a *distribution* of
-distances for one plasmid pair rather than a single number, because the
-true contig order is unknown from short-read assembly alone.
+Takes two already-fragmented plasmid assemblies (each fragment is its own
+FASTA record, standing in for a short-read contig) and reconstructs both
+plasmids under different fragment orderings. For each ordering, it measures
+the rearrangement distance between the two plasmids. Sampling many orderings
+gives a distance distribution for one plasmid pair, instead of a single
+number, since the real contig order is unknown from short-read assembly.
 
-Two distance backends are supported (selected by the `implementation` CLI
-flag):
+Two distance backends, picked with the `implementation` CLI flag:
   - pling (external tool, called via subprocess) — containment + DCJ
-    distance, invoked through the `pling` CLI.
-  - `break_distance.my_implementation` — this project's own nucmer-based
-    synteny-block + 2-break distance implementation.
+    distance.
+  - break_distance.my_implementation — this project's own nucmer-based
+    synteny-block + 2-break distance.
 
-Entry point: run as `python generateShortRead.py <file1> <file2> <iteration>
-<parallel_id> <nrOfFragments> <implementation>`. Intended to be invoked in
-batches by groupCall.py rather than run standalone.
+CLI: python generateShortRead.py <file1> <file2> <iteration> <parallel_id>
+<nrOfFragments> <implementation>. Normally called in batches by groupCall.py,
+not run on its own.
 """
 import subprocess
 import matplotlib.pyplot as plt
@@ -38,9 +36,10 @@ def writeTo(resultFile,distances,file1,file2):
 	resultFile.write("\n")
 
 def generateShortOld(nr,file,nrOfFragments) :
-	"""Legacy fragmenter: splits a single-record FASTA into nrOfFragments
-	roughly-equal chunks by raw line count, rather than reading pre-existing
-	fragment records. Superseded by generateShort(); kept for reference."""
+	"""Old version of the fragmenter: splits a single-record FASTA into
+	nrOfFragments roughly equal chunks by line count, instead of reading
+	pre-existing fragment records. Replaced by generateShort(); kept for
+	reference."""
 	i = 0
 	with open(file) as f:
 		val = []
@@ -86,9 +85,9 @@ def generateShort(nr, file, nrOfFragments):
 	return [header] + fragments
 
 def try_something(val):
-	"""Debug/scratch helper: writes each fragment of val on its own as a
-	single-record FASTA and runs pling against it individually. Not used by
-	the main pipeline (initial/initial_my_implementation)."""
+	"""Debug helper: writes each fragment in val to its own single-record
+	FASTA and runs pling on it separately. Not used by the main pipeline
+	(initial/initial_my_implementation)."""
 	distances = []
 	for i in range(1,len(val)):
 		newS = ""
@@ -103,10 +102,9 @@ def try_something(val):
 	return distances
 
 def distance(s):
-	"""Reads pling's output TSV from directory s (all_plasmids_distances.tsv)
-	and returns the distance value from the second row, third column.
-	Returns -1 if pling produced no result row (e.g. it failed to align)."""
-	#good reminder I quess, not exactly necessary but in case pling does not calculate the distance we add -1
+	"""Reads pling's output TSV in directory s (all_plasmids_distances.tsv)
+	and returns the distance from the third column. Returns -1
+	if pling didn't produce a result row (e.g. alignment failed)."""
 	f = open(s+"/all_plasmids_distances.tsv")
 	f.readline()
 	values = f.readline()
@@ -155,12 +153,11 @@ def generate(k,size,iteration,used,elements,parralel):
 				used[i] = False
 
 def factorial(size1,size2,target):
-	"""Returns True if size1! * size2! <= target, False otherwise — i.e.
-	whether the full space of (permutation-of-fragments-1, permutation-of-
-	fragments-2) pairs is small enough to enumerate exhaustively rather than
-	random-sample. Bails out early via the running-product check to avoid
-	overflow/slowness on large inputs. Despite the name, this does not
-	return a factorial value."""
+	"""Returns True if size1! * size2! <= target, else False. In other
+	words: is the full set of (fragments-1 permutation, fragments-2
+	permutation) pairs small enough to enumerate exhaustively, instead of
+	random-sampling. Stops early once the running product passes target,
+	to avoid overflow on large inputs."""
 	prod = 1
 	for i in range(1,size1+1):
 		if prod>target:
@@ -178,9 +175,7 @@ def factorial(size1,size2,target):
 
 def reverse(n,size):
 	"""Decodes integer n (0-indexed) into the n-th permutation of range(size)
-	in Lehmer-code order — the standard "factorial number system" trick for
-	turning a random integer directly into a permutation without generating
-	the whole permutation list. Used only by the legacy subsample_Old();
+	in lexicographic order. Used only by the legacy subsample_Old();
 	subsample() uses random.sample/itertools.permutations instead."""
 	#this needs comments so here I go
 	elems = [0 for i in range(size)]
@@ -216,7 +211,7 @@ def reverse(n,size):
 	empty(used)
 	return elems
 
-# --- helpers for reverse() (Lehmer-code decoding) ---
+# --- helpers for reverse() ---
 def empty(used):
 	"""Resets the `used` marker array back to all-False, in place."""
 	for i in range(1,len(used)):
@@ -248,11 +243,10 @@ def nextSmall(used):
 	return len(used) - 1;
 
 def subsample_Old(size,file1,file2, iteration,parralel,implementation=False):
-	"""Legacy sampler: draws 120 random permutation-pair indices via
-	reverse() and runs pling/my_implementation on each reconstruction.
-	Superseded by subsample(), which switches between exhaustive
-	enumeration and random sampling depending on the size of the
-	permutation space."""
+	"""Old sampler: picks 120 random permutation-pair indices with
+	reverse() and runs pling/my_implementation on each. Replaced by
+	subsample(), which switches between exhaustive enumeration and random
+	sampling depending on how big the permutation space is."""
 	distances_sample = []
 	fact = factorial(size)
 	for i in range(120):
@@ -277,14 +271,14 @@ def subsample_Old(size,file1,file2, iteration,parralel,implementation=False):
 	w.close()
 
 def subsample(size, file1, file2, iteration, parralel, implementation=False):
-	"""Samples up to `target` (120) (permutation-of-val1, permutation-of-val2)
-	pairs, reconstructs both plasmids for each pair, and measures the
-	distance between them (pling or my_implementation depending on the
-	`implementation` flag). If the full permutation space (size1! * size2!)
-	is small enough, all pairs are enumerated exhaustively; otherwise pairs
-	are drawn uniformly at random without replacement. Appends the
-	resulting distance distribution to allDistances_v2_<size>_<implementation>_<parralel>.txt.
-	Relies on globals val1/val2 set by initial()."""
+	"""Samples up to `target` (120) pairs of (permutation-of-val1,
+	permutation-of-val2), reconstructs both plasmids for each pair, and
+	measures the distance between them (pling or my_implementation,
+	depending on the `implementation` flag). If the full permutation space
+	(size1! * size2!) is small enough, every pair is enumerated; otherwise
+	pairs are picked at random with no repeats. Appends the resulting
+	distance distribution to allDistances_v2_<size>_<implementation>_<parralel>.txt.
+	Relies on the globals val1/val2 set by initial()."""
 
 	distances_sample = []
 	size1 = len(val1) - 1
@@ -334,10 +328,10 @@ def subsample(size, file1, file2, iteration, parralel, implementation=False):
 
 
 def initial(file1,file2,iteration,parralel,nrOfFragments,implementation):
-	"""Pipeline entry point for one plasmid pair. Loads both fragmented
-	FASTA files into globals val1/val2, writes the pling input-pair file
-	for this iteration/parallel slot, then calls subsample() to sample
-	fragment orderings and record the resulting distance distribution."""
+	"""Entry point for one plasmid pair. Loads both fragmented FASTA files
+	into the globals val1/val2, writes the pling input-pair file for this
+	iteration/parallel slot, then calls subsample() to sample fragment
+	orderings and record the resulting distance distribution."""
 
 	nr1 = subprocess.check_output(f"wc -l .{file1}", shell=True, text=True).strip().split(" ")[0]
 	nr2 = subprocess.check_output(f"wc -l .{file2}", shell=True, text=True).strip().split(" ")[0]
@@ -359,9 +353,9 @@ def initial(file1,file2,iteration,parralel,nrOfFragments,implementation):
 	subsample(nrOfFragments, file1, file2, iteration=iteration, parralel=parralel, implementation=implementation)
 	
 def initial_my_implementation(file1,file2,iteration,parralel,nrOfFragments):
-	"""Variant of initial() for the single-plasmid case used with
-	break_distance.my_implementation: fragments one plasmid (val) rather
-	than a pair, then samples orderings via subsample(..., implementation=True)."""
+	"""Version of initial() for break_distance.my_implementation: fragments
+	one plasmid (val) instead of a pair, then samples orderings via
+	subsample(..., implementation=True)."""
 	#The number of lines of the fasta
 	nr = subprocess.check_output(f"wc -l .{file1}",shell=True,text=True)
 	nr = nr.strip().split(" ")[0]

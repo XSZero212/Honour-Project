@@ -2,8 +2,8 @@
 bin_fragments.py — assigns real short-read contigs to their reference plasmid.
 
 Takes a fragmentedDatabase/ assembly (short-read contigs for one sample,
-identified by an SRR/DRR accession) and, using an SRR-id -> organism-name
-mapping, aligns those contigs against every plasmid_references/ sequence
+identified by an SRR/DRR accession) and, using an SRR-id,
+aligns those contigs against every plasmid_references/ sequence
 belonging to that organism with nucmer. Each contig is then "binned" into
 one or more output FASTA files under binned_fragments/ — one per reference
 plasmid it aligns to with >85% coverage — via bin_fragments(). This is what
@@ -199,32 +199,6 @@ def bin_fragments(fasta_file, mapping_file, plasmid_dir, output_dir):
     run_nucmer(combined_plasmids, fasta_file, output_prefix)
 
     coords_file = f"{output_prefix}.coords"
-
-    # for fragment_header, fragment_seq in fragments.items():
-    #     # Write this single fragment to a temp file
-    #     tmp_fragment = f"./nucmer_tmp/{srr_id}_fragment_tmp.fasta"
-    #     with open(tmp_fragment, "w") as f:
-    #         f.write(f">{fragment_header}\n{fragment_seq}\n")
-
-    #     best_plasmid   = None
-    #     best_coverage  = 0
-
-    #     for plasmid_file in plasmid_files:
-    #         plasmid_name  = os.path.splitext(os.path.basename(plasmid_file))[0]
-    #         output_prefix = f"./nucmer_tmp/{srr_id}_{plasmid_name}_vs_fragment"
-
-    #         run_nucmer(plasmid_file, tmp_fragment, output_prefix)
-
-    #         coords_file = f"{output_prefix}.coords"
-    #         if not os.path.isfile(coords_file) or os.path.getsize(coords_file) == 0:
-    #             continue
-
-    #         # Sum up all query (fragment) aligned bases for this plasmid
-    #         coverage = get_fragment_coverage(coords_file)
-
-    #         if coverage > best_coverage:
-    #             best_coverage = coverage
-    #             best_plasmid  = plasmid_file
     scores = parse_coords(coords_file,org_name)
     assigned = {}
 
@@ -250,16 +224,6 @@ def bin_fragments(fasta_file, mapping_file, plasmid_dir, output_dir):
 
             print(f"[BINNED] {fragment_header} -> {plasmid_name}")
     
-    #OLD
-    # if best_plasmid:
-    #         assigned[fragment_header] = best_plasmid
-    #         plasmid_name = os.path.splitext(os.path.basename(best_plasmid))[0]
-    #         out_file     = os.path.join(output_dir, f"{plasmid_name}_binned.fasta")
-    #         write_fasta({fragment_header: fragment_seq}, out_file)
-    #         print(f"[BINNED] {fragment_header} -> {plasmid_name} (coverage: {best_coverage})")
-    # else:
-    #         print(f"[UNASSIGNED] {fragment_header} - no alignment found")
-
     subprocess.call("rm -r ./nucmer_tmp", shell=True)
 
 

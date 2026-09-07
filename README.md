@@ -79,6 +79,41 @@ regeneratable) but are what the scripts above read from and write to:
 | `fragmentedDatabase/` / `fragmented_database_final/` | Short-read assemblies (contigs) for that real dataset, before binning. |
 | `binned_fragments/` | Contigs from `fragmentedDatabase/`, assigned to their best-matching `plasmid_references/` sequence by `bin_fragments.py`. |
 
+## Folder layout required to run groupCall.py
+
+`groupCall.py` is run from the project root and uses relative paths
+everywhere, so the following needs to already exist alongside it before any
+`func` will work:
+
+| Path | Needs to contain |
+|---|---|
+| `fastas/` | Full-length plasmid FASTA files, one per plasmid (from the pling repo). |
+| `syntethic/regenerated/` | Created before running anything that touches `syntethic.py` (func 2, 3, 4, 6) — nothing creates this folder automatically, so it must exist first. `syntethic.run()` writes the generated FASTAs here. |
+| `plasmid_references/` | Full-length reference plasmid FASTA files for the real short-read dataset (needed for func 7). |
+| `binned_fragments/` | Output of `bin_fragments.py` — `{plasmid}_binned.fasta` files (needed for func 8). |
+| `fragmentedDatabase/`, `fragmented_database_final/` | Raw short-read assemblies (contigs), input to `bin_fragments.py`. |
+| `py_out/` | Scratch folder `generateShortRead.py`/`run_pling.py` write intermediate input/FASTA files into. Also needs to exist beforehand — nothing creates it. |
+| `old_results/` | Only needed for func=2 — must contain `allDistances_v2_1.txt`. |
+
+Which plain-text pair-list file each `func` expects to find in the project
+root:
+
+| func | Needs |
+|---|---|
+| 0 `sample_random_plasmids` | `uniqueDistancesv2.txt` |
+| 1 `change_fragments_known` | `allDistances_v2_1.txt` |
+| 2 `generate_syntethic` | `old_results/allDistances_v2_1.txt` |
+| 3 `run_syntethic` | `syntethic/regenerated/` and `fastas/` already populated |
+| 4 `sample_continous` | `input_syntethic.txt` (built by `create_input()`, which reads `syntethic/regenerated/` and `fastas/`) |
+| 5 `sample_random_plasmids2` | `unique_distances_real_final.txt` |
+| 6 `run_base_pling_on_syntethic` | `syntethic/regenerated/` and `fastas/` already populated |
+| 7 `generate_ground_truth` | `real_distances_repaired_pling.txt`, plus `plasmid_references/` populated |
+| 8 `run_with_filter` | `unique_real_filtered.txt` and `unique_distances_real_diff_bin.txt`, plus `binned_fragments/` populated |
+| anything else (fallback) | `allDistances_v2_5.txt` |
+
+The `pling` CLI also needs to be installed and on `PATH`, since
+`generateShortRead.py`/`run_pling.py` invoke it as a subprocess.
+
 ## External dependencies
 
 - `pling` CLI — one of the two distance backends.

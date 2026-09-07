@@ -35,49 +35,10 @@ class Events(Enum):
     DELETION = 4
 
 class TwoBreakDistance:
-    """Computes the 2-break (double-cut-and-join) distance between two
-    genomes, each a list of chromosomes of signed block IDs. Self-contained
-    duplicate of the algorithm in break_distance.calculate2BreakDistance();
-    see that module's docstring for the breakpoint-graph construction it's
-    based on. self.dist holds the computed distance after construction."""
+
     def __init__(self,plasmid1,plasmid2):
         #genomes = self.readGenomesFromFile()
         self.dist = self.calculate2BreakDistance(plasmid1, plasmid2)
-    
-    def _inputGenomes(self):
-        # Unused: __init__ takes plasmid1/plasmid2 as direct arguments
-        # rather than reading from stdin or input.txt (see readGenomesFromFile
-        # below, also unused). Kept from an earlier CLI-driven version.
-        data = sys.stdin.read().strip().split('\n')
-        genomes = []
-        for g in data:
-            g = g.split(')(')
-            genome = []
-            for d in g:
-                d = d.split()
-                if d[0][-1] != ')':
-                    genome.append([int(d[0][1:] if '('==d[0][0] else d[0])] + [int(e) for e in d[1:-1]] +\
-                    [int(d[-1][:-1] if ')'==d[-1][-1] else d[-1])])
-                else:
-                    genome.append([int(d[0][:-1])])
-            genomes.append(genome)
-        return genomes
-    
-    def readGenomesFromFile(self):
-        f = open('input.txt', 'r')
-        data = []
-        for line in f:
-            data.append(line.strip())
-        genomes = []
-        for g in data:
-            g = g.split(')(')
-            genome = []
-            for d in g:
-                d = d.split()
-                genome.append([int(d[0][1:] if '('==d[0][0] else d[0])] + [int(e) for e in d[1:-1]] +\
-                [int(d[-1][:-1] if ')'==d[-1][-1] else d[-1])])
-            genomes.append(genome)
-        return genomes
 
     def chromosomeToCycle(self, chromosome):
         l = len(chromosome)
@@ -181,10 +142,7 @@ def reversal(genome):
 
 def translocation(genome):
     """Swaps a random suffix between two randomly chosen chromosomes.
-    Not used by generate() (only REVERSAL/TRANSPOSITION/INSERTION/DELETION
-    are in the events list — see the commented-out branch in generate()),
-    but kept as a supported event type since this module models single-
-    chromosome plasmids where translocation isn't meaningful anyway."""
+                    Not used"""
     if len(genome) < 2:
         return genome
 
@@ -210,8 +168,7 @@ def translocation(genome):
 def transposition(genome):
     """Swaps two whole chromosomes' positions in `genome`. As with
     translocation(), only meaningful for multi-chromosome genomes; plasmids
-    here are modelled as a single chromosome, so in practice this is a
-    no-op unless genome has more than one chromosome."""
+    here are modelled as a single chromosome."""
     if len(genome)<2:
         return genome
     
@@ -271,7 +228,7 @@ def write_fasta(plasmid_1,block_library,file,changes,nrOfFragments):
     f.close()
 
 def write_test(plasmid_1,file,changes,nrOfFragments):
-    """Writes the rearranged genome in the "(±1 ±2 ...)" block-string
+    """Writes the rearranged genome in the "(1 2 ...)" block-string
     format (parsed back by break_distance.readGenomeFromFile()), to
     ./syntethic{file}_{changes}_{nrOfFragments}."""
     sequence = ""
@@ -371,5 +328,3 @@ def run(file,nrOfFragments):
     block_library = split(int(nr),file,nrOfFragments)
     plasmid_1 = [[i for i in range(nrOfFragments)]]
     generate(plasmid_1,block_library,file,nrOfFragments)
-
-# so one of the problems that we have is the problem that we have zones that might be reversev again after being reversed already
