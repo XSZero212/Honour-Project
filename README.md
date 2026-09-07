@@ -1,7 +1,5 @@
 # Quantifying plasmid relatedness from short-read data
 
-Short-read assembly rarely reconstructs a plasmid as a single contig — it
-fragments it into pieces whose true order and orientation are unknown.
 This project measures how much that fragmentation actually degrades
 rearrangement-distance estimates between two plasmids, by sampling many
 possible fragment orderings for a pair and looking at the resulting
